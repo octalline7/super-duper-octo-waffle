@@ -43,10 +43,14 @@ function turn(t, t0, t1, a0, a1) {
 }
 
 // ---------- colour ----------
+// Clawd's body colours, and the colour of the face marks (eyes, line mouths). This video's Clawd is dark gray, so the
+// face is painted in bone to read on it, with dark glints (FACE.hl) where the default design has cream ones.
+const CLAWD = { col: '#4B4B52', dk: '#34343A', lt: '#6E6E76' };
+const FACE = { c: '#EFE6D2', hl: '#2B2233' };
 // Tints shift the body colour with the mood. tint: a name here or any hex colour; tintK: 0..1 strength.
 const TINT = { pale: '#F6E6D2', flush: '#E23E36', blue: '#6D86BE', rosy: '#EF8EA8', green: '#98B25E', gold: '#F0BE46' };
 function tintCols(o) {
-  const c = { col: o.col || PAL.clay, dk: o.dk || PAL.clayDk, lt: o.lt || '#F5B394' };
+  const c = { col: o.col || CLAWD.col, dk: o.dk || CLAWD.dk, lt: o.lt || CLAWD.lt };
   const tc = o.tint && (TINT[o.tint] || o.tint), k = clamp(o.tintK ?? 1);
   if (!tc || k <= 0) return c;
   return { col: mixCol(c.col, tc, .55 * k), dk: mixCol(c.dk, mixCol(tc, PAL.ink, .35), .5 * k), lt: mixCol(c.lt, mixCol(tc, '#FFFFFF', .4), .45 * k) };
@@ -242,32 +246,32 @@ function eyes(u, o, sw, sides, smear = 0) {
 function eye(e, s, u, o, sw) {
   const lx = (o.lookX || 0) * u * .5, ly = (o.lookY || 0) * u * .4;
   const slit = (w, h) => {
-    paint(rectPts(-w / 2 * u + lx, -h / 2 * u + ly, w * u, h * u, u * .04), { wash: PAL.ink, ink: null });
-    if (u > 9) paint(ellPts(lx - w * .18 * u, ly - h * .29 * u, u * .17 * w, u * .24 * w, 10), { wash: PAL.cream, washOp: 230, ink: null });
+    paint(rectPts(-w / 2 * u + lx, -h / 2 * u + ly, w * u, h * u, u * .04), { wash: FACE.c, ink: null });
+    if (u > 9) paint(ellPts(lx - w * .18 * u, ly - h * .29 * u, u * .17 * w, u * .24 * w, 10), { wash: FACE.hl, washOp: 230, ink: null });
   };
   const blinkOn = ['normal', 'look', 'wide'].includes(e) && ((T * .9 + (o.seed || 0) * 1.7) % 3.3) < .12;
-  if (blinkOn) { inkLine([[-.7 * u, .5 * u], [.7 * u, .5 * u]], sw, PAL.ink, 'ink', 0); return; }
-  const lineEye = (pts, w = 1.3, c = .2) => inkLine(pts.map(([a, b]) => [a * u, b * u]), sw * w, PAL.ink, 'ink', c);
+  if (blinkOn) { inkLine([[-.7 * u, .5 * u], [.7 * u, .5 * u]], sw, FACE.c, 'ink', 0); return; }
+  const lineEye = (pts, w = 1.3, c = .2) => inkLine(pts.map(([a, b]) => [a * u, b * u]), sw * w, FACE.c, 'ink', c);
   switch (e) {
     case 'normal': case 'look': slit(1, 2); break;
     case 'wide': slit(1.25, 2.7); break;
     case 'happy': lineEye([[-.9, .7], [0, -.5], [.9, .7]]); break;
     case 'closed': lineEye([[-.9, .2], [0, .6], [.9, .2]], 1.2, .4); break;
     case 'sleepy':
-      paint(rectPts(-.5 * u + lx, .05 * u, u, .95 * u, u * .03), { wash: PAL.ink, ink: null });
+      paint(rectPts(-.5 * u + lx, .05 * u, u, .95 * u, u * .03), { wash: FACE.c, ink: null });
       lineEye([[-.8, .05], [0, -.1], [.8, .1]], 1.1, .4); break;
-    case 'narrow': paint(rectPts(-.6 * u + lx, -.1 * u + ly, 1.2 * u, .7 * u, u * .03), { wash: PAL.ink, ink: null }); break;
+    case 'narrow': paint(rectPts(-.6 * u + lx, -.1 * u + ly, 1.2 * u, .7 * u, u * .03), { wash: FACE.c, ink: null }); break;
     case 'angry': case 'determined': {   // top edge slants DOWN toward the middle
       const hi = e === 'angry' ? .75 : .5, top = e === 'angry' ? -.7 : -.55;
       const P = [[-.65, s < 0 ? top : top + hi], [.65, s < 0 ? top + hi : top], [.65, 1], [-.65, 1]];
-      paint(P.map(([a, b]) => [a * u + lx, b * u + ly]), { wash: PAL.ink, ink: null });
-      if (e === 'determined' && u > 9) paint(ellPts(lx - .2 * u, ly + .25 * u, u * .16, u * .2, 8), { wash: PAL.cream, ink: null });
+      paint(P.map(([a, b]) => [a * u + lx, b * u + ly]), { wash: FACE.c, ink: null });
+      if (e === 'determined' && u > 9) paint(ellPts(lx - .2 * u, ly + .25 * u, u * .16, u * .2, 8), { wash: FACE.hl, ink: null });
       break;
     }
     case 'sad': case 'teary': {   // top edge slants UP toward the middle (worried)
       const P = [[-.6, s < 0 ? -.2 : -.85], [.6, s < 0 ? -.85 : -.2], [.6, .9], [-.6, .9]];
-      paint(P.map(([a, b]) => [a * u + lx, b * u + ly]), { wash: PAL.ink, ink: null });
-      if (u > 9) paint(ellPts(lx - .18 * u, ly + .05 * u, u * .16, u * .22, 8), { wash: PAL.cream, ink: null });
+      paint(P.map(([a, b]) => [a * u + lx, b * u + ly]), { wash: FACE.c, ink: null });
+      if (u > 9) paint(ellPts(lx - .18 * u, ly + .05 * u, u * .16, u * .22, 8), { wash: FACE.hl, ink: null });
       if (e === 'teary') {
         const w = Math.sin(T * 9 + s) * .06 * u;
         paint(ellPts(0, .95 * u + w, .95 * u, .38 * u, 14), { wash: PAL.sky, washOp: 210, fill: '#FFFFFF', fillOp: 60, ink: PAL.ink, sw: sw * .4 });
@@ -287,9 +291,9 @@ function eye(e, s, u, o, sw) {
     }
     case 'squeeze': lineEye([[-.55 * -s, -.7], [.55 * -s, 0], [-.55 * -s, .7]], 1.3, 0); break;   // > <
     case 'shine':
-      paint(ellPts(lx * .6, ly * .6, u * .78, u * 1.12, 16), { wash: PAL.ink, ink: null });
-      paint(ellPts(lx * .6 - .25 * u, ly * .6 - .45 * u, u * .3, u * .38, 10), { wash: PAL.cream, ink: null });
-      paint(ellPts(lx * .6 + .25 * u, ly * .6 + .45 * u, u * .14, u * .14, 8), { wash: PAL.cream, ink: null });
+      paint(ellPts(lx * .6, ly * .6, u * .78, u * 1.12, 16), { wash: FACE.c, ink: null });
+      paint(ellPts(lx * .6 - .25 * u, ly * .6 - .45 * u, u * .3, u * .38, 10), { wash: FACE.hl, ink: null });
+      paint(ellPts(lx * .6 + .25 * u, ly * .6 + .45 * u, u * .14, u * .14, 8), { wash: FACE.hl, ink: null });
       break;
     case 'scared':
       paint(ellPts(0, 0, u * .95, u * 1.15, 16), { wash: PAL.cream, ink: PAL.ink, sw: sw * .6 });
@@ -308,9 +312,9 @@ function eye(e, s, u, o, sw) {
     case 'x': lineEye([[-.8, -.8], [.8, .8]], 1, 0); lineEye([[.8, -.8], [-.8, .8]], 1, 0); break;
     case 'swirl': {
       const sp = []; for (let k = 0; k < 16; k++) { const a = k * .7 + T * 6 * s, r = k * .06 * u; sp.push([Math.cos(a) * r, Math.sin(a) * r]); }
-      inkLine(sp, sw * .6, PAL.ink, 'inkfine', .6); break;
+      inkLine(sp, sw * .6, FACE.c, 'inkfine', .6); break;
     }
-    case 'dot': paint(ellPts(lx * .5, ly * .5, u * .45, u * .55, 12), { wash: PAL.ink, ink: null }); break;
+    case 'dot': paint(ellPts(lx * .5, ly * .5, u * .45, u * .55, 12), { wash: FACE.c, ink: null }); break;
     default: slit(1, 2);
   }
 }
@@ -320,9 +324,9 @@ function eye(e, s, u, o, sw) {
 function mouth(u, m, sw) {
   if (!m) return;
   const P = pts => pts.map(([a, b]) => [a * u, b * u]), dark = '#4A1F2A';
-  const line = (pts, w = .8, c = .6) => inkLine(P(pts), sw * w, PAL.ink, 'ink', c);
+  const line = (pts, w = .8, c = .6) => inkLine(P(pts), sw * w, FACE.c, 'ink', c);
   switch (m) {
-    case 'o': paint(ellPts(0, -4.3 * u, u * .45, u * .5, 12), { wash: PAL.ink, ink: null }); break;
+    case 'o': paint(ellPts(0, -4.3 * u, u * .45, u * .5, 12), { wash: FACE.c, ink: null }); break;
     case 'O': paint(ellPts(0, -4.1 * u, u * .8, u * .95, 14), { wash: dark, ink: PAL.ink, sw: sw * .6 }); break;
     case 'smile': line([[-.8, -4.6], [0, -4.1], [.8, -4.6]]); break;
     case 'frown': line([[-.8, -4.1], [0, -4.6], [.8, -4.1]]); break;

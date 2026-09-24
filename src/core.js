@@ -172,7 +172,11 @@ function ribbon(P, w0, w1 = w0) {
 
 // ---------- paint wrapper ----------
 // One call = one painted shape: optional flat wash, optional watercolor fill, optional hatch, optional ink outline.
+// Draft mode (?draft): watercolour fills are the slow part without a GPU, so they become flat washes of the same colour.
+const DRAFT = typeof location !== 'undefined' && location.search.includes('draft');
+const DRAFT_RES = DRAFT ? +(new URLSearchParams(location.search).get('draft') || .5) || .5 : 1;   // ?draft=0.25 paints at quarter resolution
 function paint(pts, o = {}) {
+  if (DRAFT && o.fill) o = o.wash ? { ...o, fill: null } : { ...o, wash: o.fill, washOp: Math.min(255, (o.fillOp ?? 170) * .8), fill: null };
   if (o.wash || o.fill || o.hatch) {
     if (o.wash) brush.wash(o.wash, o.washOp ?? 255); else brush.noWash();
     if (o.fill) { brush.fill(o.fill, o.fillOp ?? 170); brush.fillBleed(o.bleed ?? .1); brush.fillTexture(o.tex ?? .4, o.border ?? .35); } else brush.noFill();
@@ -262,7 +266,7 @@ function defineBrushes() {
 
 // ---------- frame ----------
 async function setup() {
-  createCanvas(W, H, WEBGL); pixelDensity(1); noLoop();
+  createCanvas(W, H, WEBGL); pixelDensity(DRAFT_RES); noLoop();   // drafts paint at half resolution
   brush.scaleBrushes(5); defineBrushes();
   paperG = makePaper(); grainC = makeGrain(); glowTex = makeGlowTex(); letG = createGraphics(W, H); letG.pixelDensity(1);
   outC = document.getElementById('out'); outX = outC.getContext('2d');

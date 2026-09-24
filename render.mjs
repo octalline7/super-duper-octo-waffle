@@ -37,7 +37,7 @@ if (args.encode) {
   const out = args.out || 'out/video.mp4', names = readdirSync(FRAMES_DIR).filter(f => /^f\d{5}\.jpg$/.test(f)).sort(), n = names.length, audio = args.audio;
   const start = n ? +names[0].slice(1, 6) : 0;   // frames may start mid-video (a --range render): the audio starts there too
   console.log(`encoding ${n} frames from ${(start / fps).toFixed(2)}s → ${out}${audio ? ' with ' + audio : ''}`);
-  await run('ffmpeg', ['-y', '-loglevel', 'error', '-stats', '-framerate', String(fps), '-start_number', String(start), '-i', `${FRAMES_DIR}/f%05d.jpg`,
+  await run('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', String(fps), '-start_number', String(start), '-i', `${FRAMES_DIR}/f%05d.jpg`,
     ...(audio ? ['-ss', String(start / fps), '-i', audio, '-map', '0:v', '-map', '1:a', '-c:a', 'aac', '-b:a', '192k', '-shortest'] : []),
     '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out]);
   console.log('wrote ' + out);

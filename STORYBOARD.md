@@ -267,6 +267,13 @@ Clawd waters the first flower, now among hundreds (rhyming with shot A). Beside 
 - No text anywhere. ✔
 - The ending rhymes with the opening: the same crane down, the same watering can, the same flower, now hundreds. ✔
 
+## Changes made while building
+
+- **S.** Clawd sneaks across the sleeping square past the Headsman's hut rather than along the rooftops. At this scale the houses are about Clawd's size, so rooftops didn't read.
+- **V, W, Y, Z.** The guillotine's rope runs from the pulley over the crossbeam's end and straight down beside the right post to the lever. Clawd clings to the post there, so the saw, the bites and the last strand all happen at Clawd's mouth.
+- **P, Q.** The glare and the tug of war happen across the block, with Clawd on its left and the Headsman on its right, so the broom spans the gap between them.
+- **AB.** The petal is planted in the cobbles in front of the wrecked scaffold; the outro's flowers spread from there.
+
 ## Production notes
 
 - **Draft mode.** A `?draft` flag swaps the watercolour `fill` for flat `wash` so review sheets render quickly without a GPU. The final render uses the full watercolour look.

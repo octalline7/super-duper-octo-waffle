@@ -1,0 +1,4 @@
+node_modules
+out/
+# the song stays local (commercial track): put it at assets/guillotine.mp3
+assets/*.mp3

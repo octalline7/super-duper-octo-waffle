@@ -108,7 +108,7 @@
   // AE2 · 199.48-205.81 · silhouettes around the fire against a huge red sun, everyone out of step
   function AE2(t, lt, dur) {
     camBegin(900 + 20 * Math.sin(lt * .3), 600, .9);
-    backdrop(SKY.sunrise, { sun: [900, 520, 300] });
+    backdrop(SKY.sunrise, { sun: [900, 300, 300] });
     const sil = G.charDk;
     bonfire(900, GY + 30, t, 1.2);
     const xs = [360, 520, 1280, 1440, 1600];

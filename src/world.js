@@ -309,8 +309,9 @@ function splash(x, y, s, k, sp = 1, key = 0) {
 // Clawd's broom, drawn along +x from (0, 0) (for arm hooks), len px. o.broken: only the handle half.
 function broomAt(len, o = {}) {
   boilSeed('broom ' + (o.key ?? 0));
-  if (o.broken === 'head') inkLine([[len * .05, 0], [len * .45, 0]], len * .012 + .8, G.woodLt, 'ink', 0);
-  else inkLine([[-len * .6, 0], [o.broken === 'handle' ? len * .05 : len * .45, 0]], len * .012 + .8, G.woodLt, 'ink', 0);
+  const hw = (len * .012 + .8) * (o.w || 1);
+  if (o.broken === 'head') inkLine([[len * .05, 0], [len * .45, 0]], hw, '#A08563', 'ink', 0);
+  else inkLine([[-len * .6, 0], [o.broken === 'handle' ? len * .05 : len * .45, 0]], hw, '#A08563', 'ink', 0);
   if (o.broken === 'handle') { inkLine([[len * .03, -len * .02], [len * .09, -len * .01], [len * .05, len * .005], [len * .1, len * .02]], .8, G.woodLt, 'ink', 0); return; }
   if (o.broken === 'head') inkLine([[len * .08, -len * .02], [len * .02, -len * .005], [len * .07, len * .01], [len * .01, len * .02]], .8, G.woodLt, 'ink', 0);
   paint([[len * .4, -len * .04], [len * .72, -len * .13], [len * .76, len * .13], [len * .4, len * .04]], { wash: '#B09A6A', ink: G.ink, sw: .7 });
@@ -383,8 +384,8 @@ function rain(t, k = 1) {
   }
 }
 // The broom in world space from (x0, y0) toward (x1, y1): the handle, with the bristles at the (x1, y1) end.
-// o.half: 'handle' (the jagged handle half) or 'head' (the bristle half).
+// o.half: 'handle' (the jagged handle half) or 'head' (the bristle half). o.w: handle thickness multiplier.
 function broomSpan(x0, y0, x1, y1, o = {}) {
   const a = Math.atan2(y1 - y0, x1 - x0), len = Math.hypot(x1 - x0, y1 - y0);
-  push(); translate(x0, y0); rotate(a); translate(len * .6, 0); broomAt(len / 1.36, { key: o.key, broken: o.half }); pop();
+  push(); translate(x0, y0); rotate(a); translate(len * .6, 0); broomAt(len / 1.36, { key: o.key, broken: o.half, w: o.w }); pop();
 }

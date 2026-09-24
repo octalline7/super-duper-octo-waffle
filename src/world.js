@@ -21,7 +21,7 @@ const SKY = {
   dawn:    ['#D9D2C4', '#EFE8DA', '#D8CCB3', .15],
   noon:    ['#E9DCC0', '#F4ECDC', '#D8CCB3', .1],
   rain:    ['#7E8796', '#A9B0B9', '#9FA3A6', .45],
-  night:   ['#1C1A24', '#34303F', '#4A4550', .8],
+  night:   ['#1C1A24', '#34303F', '#5A5566', .72],
   redDawn: ['#3A2230', '#B5493C', '#6B5A58', .6],
   sunrise: ['#C8463A', '#F0A06A', '#C9A68A', .35],
   morning: ['#EBD9BC', '#F6EBD6', '#DCCDB0', .12],
@@ -103,7 +103,7 @@ function scaffold(o = {}) {
 
 // ---------- the guillotine ----------
 // o.drop 0..1: the blade's fall (0 = up, 1 = down on the block). o.swing: blade rotation (rad). o.fray 0..1: the rope
-// thinning (1 = snapped). o.lever 0..1: the red lever pulled. o.blood 0..1: red on the blade. o.bladeOff: the blade isn't drawn.
+// thinning at CUT. o.ropeCut: snapped (two dangling ends). o.lever 0..1: the red lever pulled. o.blood 0..1: red on the blade. o.bladeOff: the blade isn't drawn.
 // o.noLever: leave the lever out (close-ups where its knob would read as a stray red dot).
 const BLADE_TOP = 70, BLADE_LOW = PY - 150;
 function bladeY(drop) { return lerp(BLADE_TOP, BLADE_LOW, drop); }
@@ -119,11 +119,20 @@ function guillotine(o = {}) {
   // rope: from the blade over the pulley and down the right post to the lever cleat
   boilSeed('guillotine rope');
   const fray = o.fray || 0, ropeCol = mixCol('#B9A98A', G.woodDk, .2);
-  if (fray < 1 && !o.bladeOff) {
-    inkLine([[GX, by - 60], [GX, -14]], 1.6 * (1 - .75 * fray), ropeCol, 'ink', 0);
-    if (fray > .05) for (let k = 0; k < 4; k++) inkLine([[GX, 40 + k * 4], [GX + (k % 2 ? 1 : -1) * 22 * fray, 60 + k * 10]], .5, ropeCol, 'inkfine', .3);
+  if (!o.bladeOff && !o.ropeCut) inkLine([[GX, by - 60], [GX, -14]], 1.6, ropeCol, 'ink', 0);
+  // the rope from the pulley over the crossbeam's end, straight down beside the right post, and across to the lever.
+  // o.fray thins it at CUT (where Clawd clings and saws); o.ropeCut leaves two dangling ends.
+  const R0 = [GX + 18, -14], R1 = [CUT[0], -30], R2 = [CUT[0], LEVER[1] - 30], R3 = [LEVER[0] - 4, LEVER[1] - 6];
+  if (o.ropeCut) {
+    const sw2 = Math.sin(T * 5) * 12;
+    inkLine([R0, R1, [CUT[0] + sw2 * .5, CUT[1] - 20]], 1.4, ropeCol, 'ink', .3);
+    inkLine([[CUT[0] - sw2, CUT[1] + 40], R2, R3], 1.4, ropeCol, 'ink', .2);
+  } else {
+    inkLine([R0, R1, [CUT[0], CUT[1] - 8]], 1.4, ropeCol, 'ink', 0);
+    inkLine([[CUT[0], CUT[1] - 8], [CUT[0], CUT[1] + 8]], 1.4 * (1 - .82 * fray), ropeCol, 'ink', 0);
+    inkLine([[CUT[0], CUT[1] + 8], R2, R3], 1.4, ropeCol, 'ink', 0);
+    if (fray > .05) for (let k = 0; k < Math.ceil(fray * 7); k++) { const sd = k % 2 ? 1 : -1; inkLine([[CUT[0], CUT[1] + (k % 3 - 1) * 4], [CUT[0] + sd * (8 + 7 * hash(k)), CUT[1] + (k % 3 - 1) * 9 - sd * 5]], .5, ropeCol, 'inkfine', .3); }
   }
-  inkLine([[GX + 18, -14], [GX + half + 40, 0], [LEVER[0] - 4, LEVER[1] - 6]], 1.4, ropeCol, 'ink', .1);
   // blade
   if (!o.bladeOff) {
     boilSeed('guillotine blade');
@@ -150,7 +159,7 @@ function guillotine(o = {}) {
   paint(ellPts(LEVER[0], LEVER[1], 11, 11, 10), { wash: G.steelDk, ink: G.ink, sw: .5 });
 }
 // Where the lever's red knob is (k = 0 up, 1 pulled), for hands.
-const LEVER = [1330, 640];
+const LEVER = [1330, 640], CUT = [1072, 40];   // CUT: where Clawd saws and bites through the rope, just below the crossbeam
 const leverKnob = k => { const la = lerp(-1.35, -2.9, k); return [LEVER[0] + Math.cos(la) * 118, LEVER[1] + Math.sin(la) * 118]; };
 
 // ---------- the Headsman ----------
@@ -388,4 +397,23 @@ function rain(t, k = 1) {
 function broomSpan(x0, y0, x1, y1, o = {}) {
   const a = Math.atan2(y1 - y0, x1 - x0), len = Math.hypot(x1 - x0, y1 - y0);
   push(); translate(x0, y0); rotate(a); translate(len * .6, 0); broomAt(len / 1.36, { key: o.key, broken: o.half, w: o.w }); pop();
+}
+
+// Clawd at night: moonlit, a little bluer and lighter so the gray body still separates from the dark.
+const MOONLIT = { col: '#5E6276', dk: '#43465A', lt: '#8A8FA8' };
+// The Headsman's hut. (x, gy) = the ground point at the middle of its front; o.door 0..1 open, o.lamp 0..1 light inside.
+function hut(x, gy, o = {}) {
+  boilSeed('hut');
+  const w = 380, h = 300;
+  if (o.lamp > 0) glow(x + 60, gy - 110, 260, '#FFB866', o.lamp);
+  paint(rectPts(x - w / 2, gy - h, w, h, 3), { wash: G.woodDk, fill: G.wood, fillOp: 70, tex: .6, ink: G.ink, sw: 1 });
+  for (let k = 1; k < 7; k++) inkLine([[x - w / 2 + k * w / 7, gy - h + 6], [x - w / 2 + k * w / 7 + 3, gy - 4]], .5, G.charDk, 'inkfine', 0);
+  paint([[x - w / 2 - 40, gy - h + 10], [x - 20, gy - h - 150], [x + w / 2 + 40, gy - h + 20]], { wash: G.charDk, ink: G.ink, sw: 1 });
+  // round window
+  paint(ellPts(x - 100, gy - 190, 44, 44, 18), { wash: o.lamp > 0 ? mixCol('#2A2228', '#F4B964', o.lamp) : '#1E1A20', ink: G.ink, sw: .8 });
+  inkLine([[x - 144, gy - 190], [x - 56, gy - 190]], .6, G.woodDk, 'inkfine', 0); inkLine([[x - 100, gy - 234], [x - 100, gy - 146]], .6, G.woodDk, 'inkfine', 0);
+  // door: a dark doorway, and the door swinging open over it
+  paint(rectPts(x + 30, gy - 210, 120, 210, 1.5), { wash: o.lamp > 0 ? mixCol('#241C20', '#F2B060', o.lamp) : '#1E1A20', ink: G.ink, sw: .8 });
+  const d = o.door || 0;
+  paint([[x + 30, gy - 210], [x + 30 + 120 * (1 - d), gy - 210 - 14 * d], [x + 30 + 120 * (1 - d), gy + 8 * d], [x + 30, gy]], { wash: G.wood, ink: G.ink, sw: .8 });
 }

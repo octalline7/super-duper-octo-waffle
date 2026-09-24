@@ -111,6 +111,7 @@
 
   // The heap: the wrecked guillotine lying on the deck (after Z).
   const heap = () => { wreck(1); };
+  window.wreckHeap = heap;   // the outro dances on it
 
   // AA · 155.19-161.52 · the dust clears: Clawd on top of the heap; the Headsman in the rubble, hood pinned by the blade;
   // he tugs free, the hood tears away: a small, nervous face

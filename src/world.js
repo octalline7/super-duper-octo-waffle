@@ -5,10 +5,10 @@
 //   ground GY = 900, the far houses stand on HY = 720.
 //   the scaffold's deck is at PY = 760, from x 560 to 1320; its steps run down its RIGHT side to the ground at x ~1450.
 //   the guillotine stands on the deck at GX = 900; its crossbeam is at y ~ -10, the lunette block at the deck.
-//   the flower grows from the cobbles at FX = 1540. The melon cart is off to the left (x ~250), the hut far left (x ~ -350).
+//   the flower grows from the cobbles at FX = 1540. The melon cart stands right of it (CARTX = 1960), the hut far left (x ~ -350).
 // Clawd is u = 24 in this world; the Headsman is drawn at the same u and stands about 21u tall.
 
-const GY = 900, HY = 720, PY = 760, GX = 900, FX = 1540, SCAF = [560, 1320], U = 24;
+const GY = 900, HY = 720, PY = 760, GX = 900, FX = 1540, SCAF = [560, 1320], U = 24, CARTX = 1960;
 const G = {
   bone: '#EFE6D2', boneDk: '#D8CCB3', boneDkr: '#BFB29A', ink: PAL.ink,
   red: '#B3261E', redDk: '#7E1A16', redLt: '#D9493A', oxblood: '#6B1E22',
@@ -104,6 +104,7 @@ function scaffold(o = {}) {
 // ---------- the guillotine ----------
 // o.drop 0..1: the blade's fall (0 = up, 1 = down on the block). o.swing: blade rotation (rad). o.fray 0..1: the rope
 // thinning (1 = snapped). o.lever 0..1: the red lever pulled. o.blood 0..1: red on the blade. o.bladeOff: the blade isn't drawn.
+// o.noLever: leave the lever out (close-ups where its knob would read as a stray red dot).
 const BLADE_TOP = 70, BLADE_LOW = PY - 150;
 function bladeY(drop) { return lerp(BLADE_TOP, BLADE_LOW, drop); }
 function guillotine(o = {}) {
@@ -140,6 +141,7 @@ function guillotine(o = {}) {
   paint(rectPts(GX - half, PY - 96, 2 * half, 96, 2), { wash: G.woodDk, fill: G.wood, fillOp: 60, ink: G.ink, sw: 1 });
   paint(ellPts(GX, PY - 96, 38, 30, 16), { wash: G.charDk, ink: G.ink, sw: .7 });
   // the lever, on its own short post near the deck's right end; the rope runs down to it. Pulling swings it toward the block.
+  if (o.noLever) return;
   boilSeed('guillotine lever');
   const [kx, ky] = leverKnob(o.lever || 0);
   paint(rectPts(LEVER[0] - 9, LEVER[1] - 10, 18, PY - LEVER[1] + 10, 1.5), { wash: G.woodDk, ink: G.ink, sw: .7 });
@@ -219,8 +221,8 @@ function headsman(x, gy, u, o = {}) {
 
 // ---------- townsfolk ----------
 // Bean-shaped people. (x, gy) = ground point; u = the unit (about Clawd's). o: hat (bonnet, cap, top, scarf, bald,
-// nightcap), col, cheer 0..1 (arms up), dy, sq, rot, flip, lookX, mouth ('o', 'smile', 'open', 'frown'), eyes ('dot',
-// 'shut', 'wide'), umbrella, boilKey.
+// nightcap, none), col, cheer 0..1 (arms up), dy, sq, rot, flip, lookX, mouth ('o', 'smile', 'open', 'frown'), eyes
+// ('dot', 'shut', 'wide'), back (seen from behind: no face), umbrella, boilKey.
 const FOLK = [
   { hat: 'bonnet', col: '#E9DDC4' }, { hat: 'cap', col: '#E2D4B8' }, { hat: 'top', col: '#EDE3CE' },
   { hat: 'scarf', col: '#E6D8BD' }, { hat: 'bald', col: '#E4D2B6' },
@@ -239,12 +241,13 @@ function folk(x, gy, u, o = {}) {
   paint(ellPts(-.6 * u, -1.4 * u, 1.6 * u, .8 * u, 14), { fill: dk, fillOp: 90, bleed: .1, ink: null });
   paint(body, { ink: G.ink, sw, curv: .5 });
   rs('face');
-  const lx = (o.lookX || 0) * .5 * u, e = o.eyes || 'dot';
+  const lx = (o.lookX || 0) * .5 * u, e = o.back ? 'none' : o.eyes || 'dot';
   for (const s of [-1, 1]) {
     if (e === 'shut') inkLine([[s * .7 * u + lx - .3 * u, -4.6 * u], [s * .7 * u + lx, -4.8 * u], [s * .7 * u + lx + .3 * u, -4.6 * u]], sw * .6, G.ink, 'ink', .4);
-    else paint(ellPts(s * .7 * u + lx, -4.7 * u, (e === 'wide' ? .3 : .18) * u, (e === 'wide' ? .36 : .26) * u, 10), { wash: G.ink, ink: null });
+    else if (e !== 'none') paint(ellPts(s * .7 * u + lx, -4.7 * u, (e === 'wide' ? .3 : .18) * u, (e === 'wide' ? .36 : .26) * u, 10), { wash: G.ink, ink: null });
   }
-  if (o.mouth === 'o' || o.mouth === 'open') paint(ellPts(lx * .8, -3.8 * u, (o.mouth === 'open' ? .5 : .25) * u, (o.mouth === 'open' ? .45 : .3) * u, 10), { wash: '#4A1F2A', ink: G.ink, sw: sw * .4 });
+  if (o.back) {}
+  else if (o.mouth === 'o' || o.mouth === 'open') paint(ellPts(lx * .8, -3.8 * u, (o.mouth === 'open' ? .5 : .25) * u, (o.mouth === 'open' ? .45 : .3) * u, 10), { wash: '#4A1F2A', ink: G.ink, sw: sw * .4 });
   else if (o.mouth === 'smile') inkLine([[lx - .45 * u, -3.9 * u], [lx, -3.65 * u], [lx + .45 * u, -3.9 * u]], sw * .5, G.ink, 'ink', .5);
   else if (o.mouth === 'frown') inkLine([[lx - .45 * u, -3.65 * u], [lx, -3.9 * u], [lx + .45 * u, -3.65 * u]], sw * .5, G.ink, 'ink', .5);
   rs('hat');
@@ -306,8 +309,10 @@ function splash(x, y, s, k, sp = 1, key = 0) {
 // Clawd's broom, drawn along +x from (0, 0) (for arm hooks), len px. o.broken: only the handle half.
 function broomAt(len, o = {}) {
   boilSeed('broom ' + (o.key ?? 0));
-  inkLine([[-len * .6, 0], [len * .45, 0]], len * .012 + .8, G.woodLt, 'ink', 0);
-  if (o.broken === 'handle') { inkLine([[len * .45, 0], [len * .5, -len * .03], [len * .47, len * .02]], .7, G.woodLt, 'ink', 0); return; }
+  if (o.broken === 'head') inkLine([[len * .05, 0], [len * .45, 0]], len * .012 + .8, G.woodLt, 'ink', 0);
+  else inkLine([[-len * .6, 0], [o.broken === 'handle' ? len * .05 : len * .45, 0]], len * .012 + .8, G.woodLt, 'ink', 0);
+  if (o.broken === 'handle') { inkLine([[len * .03, -len * .02], [len * .09, -len * .01], [len * .05, len * .005], [len * .1, len * .02]], .8, G.woodLt, 'ink', 0); return; }
+  if (o.broken === 'head') inkLine([[len * .08, -len * .02], [len * .02, -len * .005], [len * .07, len * .01], [len * .01, len * .02]], .8, G.woodLt, 'ink', 0);
   paint([[len * .4, -len * .04], [len * .72, -len * .13], [len * .76, len * .13], [len * .4, len * .04]], { wash: '#B09A6A', ink: G.ink, sw: .7 });
   for (let k = 0; k < 4; k++) inkLine([[len * .45, (k - 1.5) * len * .02], [len * .74, (k - 1.5) * len * .06]], .4, '#7E6A44', 'inkfine', 0);
 }
@@ -338,4 +343,48 @@ function whipLines(k, dir = 1) {
   if (k <= .02) return;
   for (let i = 0; i < 14; i++) { boilSeed('whip' + i); const y = hash(i) * H, l = W * (.4 + .5 * hash(i + 9)) * k, x = hash(i + 3) * W; inkLine([[x, y], [x + dir * l, y + jit(4)]], 2 + 3 * hash(i + 5), mixCol(G.boneDk, G.ink, .3), 'dry', 0); }
   paint(rectPts(-40, -40, W + 80, H + 80), { wash: G.boneDk, washOp: 170 * k, ink: null });
+}
+
+// The melon cart, heaped with red melons. n = how many are left on the heap (0..14).
+function cart(x, gy, n = 14) {
+  boilSeed('cart');
+  paint(rectPts(x - 150, gy - 150, 300, 70, 2), { wash: G.wood, fill: G.woodDk, fillOp: 70, ink: G.ink, sw: .9 });
+  inkLine([[x - 150, gy - 120], [x - 290, gy - 60]], 2, G.woodDk, 'ink', 0);
+  for (const wx of [x - 90, x + 90]) { paint(ellPts(wx, gy - 48, 46, 46, 20, 1.5), { wash: G.woodDk, ink: G.ink, sw: .8 }); inkLine([[wx - 40, gy - 48], [wx + 40, gy - 48]], .6, G.woodLt, 'inkfine', 0); inkLine([[wx, gy - 88], [wx, gy - 8]], .6, G.woodLt, 'inkfine', 0); }
+  for (let i = 0; i < n; i++) { const row = i < 6 ? 0 : i < 10 ? 1 : i < 13 ? 2 : 3, k = [0, 6, 10, 13][row], m = [6, 4, 3, 1][row]; melon(x - (m - 1) * 23 + (i - k) * 46 + (row % 2) * 4, gy - 175 - row * 38, 26, { key: 'cart' + i, rot: hash(i) - .5 }); }
+}
+// A top hat on its own (thrown), centred at (x, y), s = size unit, a = spin.
+function flyingHat(x, y, s, a, kind = 'top') {
+  boilSeed('hat ' + kind); push(); translate(x, y); rotate(a);
+  if (kind === 'top') { paint(rectPts(-1.2 * s, -2.9 * s, 2.4 * s, 2.9 * s, s * .04), { wash: G.charDk, ink: G.ink, sw: .8 }); paint(rectPts(-2 * s, -.2 * s, 4 * s, .5 * s), { wash: G.charDk, ink: G.ink, sw: .7 }); paint(rectPts(-1.2 * s, -.8 * s, 2.4 * s, .45 * s), { wash: G.red, ink: null }); }
+  else paint([[-1.8 * s, 0], [-1.2 * s, -1.1 * s], [1.4 * s, -1 * s], [2.9 * s, -.2 * s], [1.8 * s, .1 * s]].map(p => p), { wash: G.charLt, ink: G.ink, sw: .7, curv: .3 });
+  pop();
+}
+// Red juice spots on Clawd (a draw hook; body-local front coords). n = how many (0..9), grows over time.
+function spotsHook(n, extra) {
+  return (u, sw) => {
+    // on the lower body and the outer corners, clear of the eyes, so the face still reads
+    const SP = [[-3.9, -3.1], [-1.2, -2.7], [3.4, -2.9], [.9, -3.4], [-4.3, -7.2], [4.2, -6.9], [-2.6, -3.6], [2.2, -2.6], [4.4, -4.6]];
+    for (let i = 0; i < Math.min(9, Math.floor(n)); i++) paint(ellPts(SP[i][0] * u, SP[i][1] * u, (.3 + .3 * hash(i)) * u, (.24 + .24 * hash(i + 2)) * u, 10, u * .05), { wash: G.red, washOp: 235, ink: null });
+    if (extra) extra(u, sw);
+  };
+}
+// The blade on a bar-long chopping cycle (background work): falls fast on the bar's downbeat, rises slowly after.
+function chopCycle(t) { const f = frac((t - OFF) / (4 * BEAT)), fall = seg(f, 0, .04), rise = seg(f, .3, .85); return easeIn(fall) * (1 - ease(rise)); }
+
+// Rain streaks over the frame (screen space, after camEnd). k = 0..1 heaviness.
+function rain(t, k = 1) {
+  if (k <= .01) return;
+  const n = Math.round(70 * k);
+  for (let i = 0; i < n; i++) {
+    boilSeed('rain' + i);
+    const x = frac(hash(i * 1.7) + t * .05) * (W + 200) - 100, y = frac(hash(i * 2.9) + t * (1.3 + .5 * hash(i))) * (H + 200) - 100;
+    inkLine([[x, y], [x - 14, y + 60 + 30 * hash(i + 4)]], .6 + .5 * hash(i + 8), mixCol(G.rain, '#FFFFFF', .2), 'inkfine', 0);
+  }
+}
+// The broom in world space from (x0, y0) toward (x1, y1): the handle, with the bristles at the (x1, y1) end.
+// o.half: 'handle' (the jagged handle half) or 'head' (the bristle half).
+function broomSpan(x0, y0, x1, y1, o = {}) {
+  const a = Math.atan2(y1 - y0, x1 - x0), len = Math.hypot(x1 - x0, y1 - y0);
+  push(); translate(x0, y0); rotate(a); translate(len * .6, 0); broomAt(len / 1.36, { key: o.key, broken: o.half }); pop();
 }

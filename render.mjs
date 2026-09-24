@@ -9,6 +9,7 @@
 //     node render.mjs --clip [--range=0:4] --out=out/video.mp4                               straight to MP4 (one worker)
 //     node render.mjs --frames [--range=0:8] --workers=4                                     JPEG frames → out/frames (parallel, resumable)
 //     node render.mjs --encode --out=out/video.mp4                                           out/frames → MP4
+//   --dir=<folder> renders / encodes frames somewhere other than out/frames (e.g. draft previews).
 //   Standalone loops (LOOPS in the page): add --loop=<name> to any of the above (times are then loop times), or
 //     node render.mjs --loop=emotions --png --out=out/loop_emotions                          one cycle as PNGs (for GIFs)
 //   Draft: add --draft to any of the above to swap watercolour fills for flat washes and paint at half resolution
@@ -27,16 +28,17 @@ const CHROMES = [args.chrome, process.env.CHROME_PATH, 'C:/Program Files/Google/
   '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'];
 const CHROME = CHROMES.find(p => p && existsSync(p));
 if (!CHROME) { console.error('Chrome not found: pass --chrome=<path> or set CHROME_PATH'); process.exit(1); }
-const fps = +(args.fps || 24), FRAMES_DIR = 'out/frames';
+const fps = +(args.fps || 24), FRAMES_DIR = args.dir || 'out/frames';
 const run = (cmd, a) => new Promise((ok, bad) => { const p = spawn(cmd, a, { stdio: 'inherit' }); p.on('close', c => c ? bad(new Error(cmd + ' exited ' + c)) : ok()); });
 const times = s => String(s).split(',').map(Number);
 const span = s => String(s).split(':').map(Number);
 
 if (args.encode) {
-  const out = args.out || 'out/video.mp4', n = readdirSync(FRAMES_DIR).filter(f => f.endsWith('.jpg')).length, audio = args.audio;
-  console.log(`encoding ${n} frames → ${out}${audio ? ' with ' + audio : ''}`);
-  await run('ffmpeg', ['-y', '-loglevel', 'error', '-stats', '-framerate', String(fps), '-i', `${FRAMES_DIR}/f%05d.jpg`,
-    ...(audio ? ['-i', audio, '-map', '0:v', '-map', '1:a', '-c:a', 'aac', '-b:a', '192k', '-shortest'] : []),
+  const out = args.out || 'out/video.mp4', names = readdirSync(FRAMES_DIR).filter(f => /^f\d{5}\.jpg$/.test(f)).sort(), n = names.length, audio = args.audio;
+  const start = n ? +names[0].slice(1, 6) : 0;   // frames may start mid-video (a --range render): the audio starts there too
+  console.log(`encoding ${n} frames from ${(start / fps).toFixed(2)}s → ${out}${audio ? ' with ' + audio : ''}`);
+  await run('ffmpeg', ['-y', '-loglevel', 'error', '-stats', '-framerate', String(fps), '-start_number', String(start), '-i', `${FRAMES_DIR}/f%05d.jpg`,
+    ...(audio ? ['-ss', String(start / fps), '-i', audio, '-map', '0:v', '-map', '1:a', '-c:a', 'aac', '-b:a', '192k', '-shortest'] : []),
     '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out]);
   console.log('wrote ' + out);
   process.exit(0);
@@ -52,8 +54,8 @@ async function openPage(tag = '') {
   const page = await browser.newPage();
   page.on('console', m => { if (['error', 'warn'].includes(m.type())) console.log(`[page${tag}]`, m.text()); });
   page.on('pageerror', e => console.log(`[page error${tag}]`, e.message));
-  await page.goto(pathToFileURL(resolve('studio.html')).href + '?render' + (args.draft ? '&draft=' + (args.draft === true ? .5 : args.draft) : ''), { waitUntil: 'networkidle0' });
-  await page.waitForFunction('window.ready === true', { timeout: 60000 });
+  await page.goto(pathToFileURL(resolve('studio.html')).href + '?render' + (args.draft ? '&draft=' + (args.draft === true ? .5 : args.draft) : ''), { waitUntil: 'networkidle0', timeout: 0 });
+  await page.waitForFunction('window.ready === true', { timeout: 0 });
   if (args.loop) {
     const ok = await page.evaluate(name => { if (!LOOPS[name]) return false; window.LOOP = LOOPS[name]; return true; }, args.loop);
     if (!ok) { console.error(`no loop named "${args.loop}"`); process.exit(1); }
